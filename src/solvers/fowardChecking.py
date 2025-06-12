@@ -2,7 +2,7 @@ import random
 
 from src.aula.aula import Aula
 
-
+#Inicializa uma agenda de professores, usada para verificação de conflitos globais
 def construir_agenda_professores():
     agenda = {
         prof: {dia: [0] * 15 for dia in ['segunda', 'terça', 'quarta', 'quinta', 'sexta']}
@@ -10,6 +10,7 @@ def construir_agenda_professores():
     }
     return agenda
 
+# particiona aulas com mais de 3 creditos em duas aulas com as mesmas caracteristicas, como maneira de facilitar a distribuição
 def particionar_aulas(aulas):
     aulas_temp = {}
     for aula in aulas:
@@ -27,12 +28,13 @@ def particionar_aulas(aulas):
             aulas[aula].set_ch(aulas[aula].get_ch() - novo_ch)
     aulas.update(aulas_temp)
 
+
+# Traduz a solução final em uma agenda
 def construir_agenda_aulas(solucao):
     agenda = {
         dia: {hora: [] for hora in range(1, 16)}
         for dia in ['segunda', 'terça', 'quarta', 'quinta', 'sexta']
     }
-
     for aula in solucao:
         for horario in solucao[aula]:
             if horario < 16:
@@ -47,6 +49,7 @@ def construir_agenda_aulas(solucao):
                 agenda['sexta'][horario - 60].append(aula)
     return agenda
 
+# aloca aula na agenda dos professores, como meio de facilitar a verificação dos limites de aulas consecutivas e aulas diarias
 def alocar_aula_agenda_professores(agenda, horarios, professores):
     for professor in professores:
         for horario in horarios:
@@ -61,6 +64,7 @@ def alocar_aula_agenda_professores(agenda, horarios, professores):
             else:
                 agenda[professor]['sexta'][horario - 61] = 1
 
+#Desaloca aulas da agenda dos professores quando ocorre um conflito qualquer
 def desalocar_aula_agenda_professores(agenda, horarios, professores):
     for professor in professores:
         for horario in horarios:
@@ -75,6 +79,7 @@ def desalocar_aula_agenda_professores(agenda, horarios, professores):
             else:
                 agenda[professor]['sexta'][horario - 61] = 0
 
+#Verifica se um professor não esta dando mais de 6 aulas diarias
 def conflito_max_aulas_diarias(agenda, horarios, professores):
     for professor in professores:
         for horario in horarios:
@@ -95,6 +100,7 @@ def conflito_max_aulas_diarias(agenda, horarios, professores):
                     return True
     return False
 
+#Verifica se o professor se o professor não esta dando mais de 4 aulas consecutivas no dia
 def conflito_max_aulas_seguidas(agenda, horarios, professores):
     for professor in professores:
         for horario in horarios:
@@ -115,17 +121,20 @@ def conflito_max_aulas_seguidas(agenda, horarios, professores):
                     return True
     return False
 
+#verifica se uma aula não esta começando em um turno e acabando em outro
 def conflito_turnos(horarios):
     for i in range(5,71,5):
         if f'{i}{i+1}' in ''.join(map(str, horarios)):
             return True
     return False
 
+#verifica se um par de aulas não está sendo divido por um intervalo qualquer
 def sao_consecutivos(horarios):
     if not horarios:
         return False
     return len(set(horarios)) == len(horarios) and max(horarios) - min(horarios) + 1 == len(horarios)
 
+#verifica se as aulas estão a começar em horarios padrões para começo de aulas
 def inicia_em_horario_padrao(horarios):
     horarios_padrao_par = [1,2,4,6,8,11,13,16,17,19,21,23,26,28,31,32,34,36,38, 41, 43, 46, 47, 49, 51, 53, 56, 58, 61, 62, 64, 66, 68, 71, 73]
     horarios_padrao_impar = [1,4,8,13,16,19,23,28,31,34,38, 43, 46, 49, 53, 58, 61, 64, 68, 73]
@@ -137,12 +146,15 @@ def inicia_em_horario_padrao(horarios):
             return True
     return False
 
+#verifica todas as restrições globais
 def restricoes_globais(agenda, horarios, professores):
     return (conflito_max_aulas_seguidas(agenda, horarios, professores) or conflito_max_aulas_diarias(agenda, horarios, professores))
 
+#verifica algumas caracteristicas desejáveis para a alocação da aula
 def caracteristicas_desejaveis(horarios):
     return not(inicia_em_horario_padrao(horarios)) or not(sao_consecutivos(horarios)) or conflito_turnos(horarios) or aula_7_da_manha(horarios)
 
+#aloca a aula na agenda temporaria usada para alguma verificação de caracteristicas desejaveis
 def alocar_aula_agenda_temp(agenda, aula, aulas, horario):
     if horario < 16:
         agenda['segunda'].append(f'{aulas[aula].get_disciplina()}{aulas[aula].get_curso()}')
@@ -155,7 +167,7 @@ def alocar_aula_agenda_temp(agenda, aula, aulas, horario):
     else:
         agenda['sexta'].append(f'{aulas[aula].get_disciplina()}{aulas[aula].get_curso()}')
 
-
+# verifica se uma mesma aula não está sendo ministrada em dois horairos difertentes no mesmo dia
 def aula_se_repete_no_dia(agenda, aula, aulas, horario):
     if horario < 16:
         if f'{aulas[aula].get_disciplina()}{aulas[aula].get_curso()}' in agenda['segunda']:
@@ -174,11 +186,13 @@ def aula_se_repete_no_dia(agenda, aula, aulas, horario):
             return True
     return False
 
+# Verifica se a aula não está a começar as 7 da manhã
 def aula_7_da_manha(horarios):
     if horarios[0] in [1,16, 31, 46, 61]:
         return True
     return False
 
+#Tentiva de dar uma melhor distribuida nas aulas durante a semana
 def alta_densidade_de_aulas_no_dia(agenda, horario):
     densidade = 24
     if horario < 16:
@@ -198,25 +212,23 @@ def alta_densidade_de_aulas_no_dia(agenda, horario):
             return True
     return False
 
-
+#Verifica se uma optativa de periodo X não está no mesmo horario que uma aula de SIN ou CCO no mesmo horario
 def conflito_opt_cco_sin(aula_i, aula_j, aulas):
     curso_i = aulas[aula_i].get_curso()
     curso_j = aulas[aula_j].get_curso()
-
     if (curso_i in ['CCO', 'SIN']) or (curso_j in ['CCO', 'SIN']):
         if aulas[aula_i].get_periodo() == aulas[aula_j].get_periodo():
             return True
     return False
 
 
-def mac3(aulas: dict):
-    #print(aulas.keys())
-    particionar_aulas(aulas)
-    #print(aulas.keys())
+def foward_checking(aulas: dict):
+    particionar_aulas(aulas) # particiona aulas com mais de 3 creditos em duas aulas com as mesmas caracteristicas, como maneira de facilitar a distribuição
     # inicializa o conjunto de dominios
     aulas_dominio = {aula: list(range(1,76)) for aula in aulas}
     # Inicializa a lista de adjacentes
     lista_adjacentes = {}
+    #cria as arestas de conflito
     for i in aulas:
         lista_adjacentes[i] = []
         for j in aulas:
@@ -235,20 +247,20 @@ def mac3(aulas: dict):
                 lista_adjacentes[i].append(j)
                 continue
 
-    agenda_professores = construir_agenda_professores()
+    agenda_professores = construir_agenda_professores() #Inicializa uma agenda de professores, usada para verificação de conflitos globais
 
     agenda_temp_aulas = {
         dia: []
         for dia in ['segunda', 'terça', 'quarta', 'quinta', 'sexta']
     }
 
-
+    #Dentro desse laço ocorre o algoritmo de arco consistencia
     while lista_adjacentes:
         aulas_validas = [aula for aula in aulas_dominio if aula in lista_adjacentes]
-        #aula_atual = min(aulas_validas, key=lambda x: len(aulas_dominio[x]))
         aula_atual = random.choice(aulas_validas)
         conflito = True
         shift = 0
+        # Dentro desse laço ocorre a escolha de dominio para a Aula em análise no momento
         while conflito:
             potencial_aulas_dominio = aulas_dominio[aula_atual][shift:aulas[aula_atual].get_ch()+shift]
             alocar_aula_agenda_professores(agenda_professores, potencial_aulas_dominio, aulas[aula_atual].get_professores())
@@ -258,17 +270,19 @@ def mac3(aulas: dict):
             else:
                 conflito = False
         aulas_dominio[aula_atual] = potencial_aulas_dominio
+        #Dentro desse laço o dominio da aula atual é subtraido dos dominios de todos os seus adjacentes
         for adjacente in lista_adjacentes[aula_atual]:
             for i in aulas_dominio[aula_atual]:
                 if i in aulas_dominio[adjacente]:
                     aulas_dominio[adjacente].remove(i)
                 if len(aulas_dominio[adjacente]) < aulas[adjacente].get_ch():
-                    print("erro")
+                    print(f"Faltou horario disponiveis para {aulas[adjacente].get_disciplina()}")
                     return None
             lista_adjacentes[adjacente].remove(aula_atual)
         del lista_adjacentes[aula_atual]
         alocar_aula_agenda_temp(agenda_temp_aulas, aula_atual, aulas, aulas_dominio[aula_atual][0])
 
+    # Traduz a solução final em uma agenda    
     agenda_aulas = construir_agenda_aulas(aulas_dominio)
 
     return agenda_aulas
