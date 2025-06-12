@@ -70,7 +70,7 @@ def criar_pdf(semestre, solucao, aulas):
 
 
     # Criação do PDF
-    doc = SimpleDocTemplate(f"{semestre} - horarios.pdf", pagesize=landscape(A3), leftMargin=6 * cm,
+    doc = SimpleDocTemplate(f"data/output/{semestre} - horarios.pdf", pagesize=landscape(A3), leftMargin=6 * cm,
     rightMargin=6 * cm,)
     elements = []
 
