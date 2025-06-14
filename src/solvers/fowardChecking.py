@@ -262,6 +262,7 @@ def foward_checking(aulas: dict):
         shift = 0
         # Dentro desse laço ocorre a escolha de dominio para a Aula em análise no momento
         while conflito:
+            backtracking = False
             potencial_aulas_dominio = aulas_dominio[aula_atual][shift:aulas[aula_atual].get_ch()+shift]
             alocar_aula_agenda_professores(agenda_professores, potencial_aulas_dominio, aulas[aula_atual].get_professores())
             if caracteristicas_desejaveis(potencial_aulas_dominio) or restricoes_globais(agenda_professores, potencial_aulas_dominio, aulas[aula_atual].get_professores()) or aula_se_repete_no_dia(agenda_temp_aulas, aula_atual, aulas, potencial_aulas_dominio[0]) or alta_densidade_de_aulas_no_dia(agenda_temp_aulas, potencial_aulas_dominio[0]):
@@ -269,6 +270,7 @@ def foward_checking(aulas: dict):
                 shift += 1
             else:
                 conflito = False
+        backup_dominio = aulas_dominio[aula_atual]
         aulas_dominio[aula_atual] = potencial_aulas_dominio
         #Dentro desse laço o dominio da aula atual é subtraido dos dominios de todos os seus adjacentes
         for adjacente in lista_adjacentes[aula_atual]:
@@ -277,10 +279,25 @@ def foward_checking(aulas: dict):
                     aulas_dominio[adjacente].remove(i)
                 if len(aulas_dominio[adjacente]) < aulas[adjacente].get_ch():
                     print(f"Faltou horario disponiveis para {aulas[adjacente].get_disciplina()}")
-                    return None
-            lista_adjacentes[adjacente].remove(aula_atual)
-        del lista_adjacentes[aula_atual]
-        alocar_aula_agenda_temp(agenda_temp_aulas, aula_atual, aulas, aulas_dominio[aula_atual][0])
+                    print("Iniando processo de backtracking!!!")
+                    backtracking = True
+            if backtracking:
+                break
+            else:
+                lista_adjacentes[adjacente].remove(aula_atual)
+        # realiza o backtracking aqui
+        if backtracking:
+            for adjacente in lista_adjacentes[aula_atual]:
+                for i in aulas_dominio[aula_atual]:
+                    if i not in aulas_dominio[adjacente]:
+                        aulas_dominio[adjacente].append(i)
+                if aula_atual not in lista_adjacentes[adjacente]:
+                    lista_adjacentes[adjacente].append(aula_atual)
+            aulas_dominio[aula_atual] = backup_dominio
+            continue
+        else:
+            del lista_adjacentes[aula_atual]
+            alocar_aula_agenda_temp(agenda_temp_aulas, aula_atual, aulas, aulas_dominio[aula_atual][0])
 
     # Traduz a solução final em uma agenda    
     agenda_aulas = construir_agenda_aulas(aulas_dominio)
