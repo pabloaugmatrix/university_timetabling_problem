@@ -255,6 +255,7 @@ def foward_checking(aulas: dict):
     }
 
     #Dentro desse laço ocorre o algoritmo de arco consistencia
+    backtracking_count = 0
     while lista_adjacentes:
         aulas_validas = [aula for aula in aulas_dominio if aula in lista_adjacentes]
         aula_atual = random.choice(aulas_validas)
@@ -263,6 +264,8 @@ def foward_checking(aulas: dict):
         # Dentro desse laço ocorre a escolha de dominio para a Aula em análise no momento
         while conflito:
             backtracking = False
+            if backtracking_count > 100: #Controle para que não entre em um loop infinito
+                return None
             potencial_aulas_dominio = aulas_dominio[aula_atual][shift:aulas[aula_atual].get_ch()+shift]
             alocar_aula_agenda_professores(agenda_professores, potencial_aulas_dominio, aulas[aula_atual].get_professores())
             if caracteristicas_desejaveis(potencial_aulas_dominio) or restricoes_globais(agenda_professores, potencial_aulas_dominio, aulas[aula_atual].get_professores()) or aula_se_repete_no_dia(agenda_temp_aulas, aula_atual, aulas, potencial_aulas_dominio[0]) or alta_densidade_de_aulas_no_dia(agenda_temp_aulas, potencial_aulas_dominio[0]):
@@ -281,6 +284,7 @@ def foward_checking(aulas: dict):
                     print(f"Faltou horario disponiveis para {aulas[adjacente].get_disciplina()}")
                     print("Iniando processo de backtracking!!!")
                     backtracking = True
+                    backtracking_count += 1
             if backtracking:
                 break
             else:

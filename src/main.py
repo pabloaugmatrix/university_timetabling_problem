@@ -1,3 +1,6 @@
+import random
+import sys
+
 from src.aula.aula_dict import create_aulas_dict
 from src.data.criar_pdf import criar_pdf
 from src.data.read_data import read_data
@@ -5,22 +8,22 @@ from src.model.grafo import grafo
 from src.solvers.fowardChecking import foward_checking
 
 if __name__ == "__main__":
-    path = "data/input/Cenário 5 -  1º Semestre.pdf"
+    if len(sys.argv) < 2:
+        print('Uso: python3 -m src.main <nome do arquivo> [seed]')
+        exit(1)
+    filename = sys.argv[1]
+    if len(sys.argv) == 3:
+        seed = int(sys.argv[2])
+        random.seed(seed)
+        print(f"Seed usada: {seed}")
+    print(f"Arquivo: {filename}")
+    instancia = sys.argv[1]
+    path = f"data/input/{instancia}"
     dataframe = read_data(path)
     aulas = create_aulas_dict(dataframe)
-    grafo(aulas, "data/output/grafo_1º_Semestre.png")
+    grafo(aulas, f"data/output/Grafo {instancia[12:-4]}.png")
     solucao = foward_checking(aulas)
     if solucao != None:
-        criar_pdf("1º Semestre", solucao, aulas)
-    else:
-        print(f"Não foi possivel constuir uma solução para {path}")
-
-    path = "data/input/Cenário 5 -  2º Semestre.pdf"
-    dataframe = read_data(path)
-    aulas = create_aulas_dict(dataframe)
-    grafo(aulas, "data/output/grafo_2º_Semestre.png")
-    solucao = foward_checking(aulas)
-    if solucao != None:
-        criar_pdf("2º Semestre", solucao, aulas)
+        criar_pdf(f"{instancia[12:-4]}", solucao, aulas)
     else:
         print(f"Não foi possivel constuir uma solução para {path}")
