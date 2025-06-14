@@ -1,66 +1,90 @@
-import igraph as ig
+import networkx as nx
 import matplotlib.pyplot as plt
-from matplotlib.font_manager import font_scalings
-
 
 def grafo(aulas_dict: dict, save_path):
-    # Cria um grafo com suporte a múltiplas arestas
-    g = ig.Graph(directed=False)
+    # Cria um MultiGraph não direcionado
+    G = nx.MultiGraph()
 
-    # Adiciona vértices usando o código da aula como rótulo
+    # Adiciona os nós com atributos
     for aula_key in aulas_dict:
         aula = aulas_dict[aula_key]
-        if(aula.get_curso() == 'CCO'):
-            color = 'green'
-        elif(aula.get_curso() == 'SIN'):
+        if aula.get_curso() == 'CCO':
+            color = '#00FF00' #lima
+        elif aula.get_curso() == 'SIN':
             color = 'orange'
-        elif(aula.get_curso() == 'OutrosCursos'):
+        elif aula.get_curso() == 'OutrosCursos':
             color = 'yellow'
-        elif(aula.get_curso() == 'Optativas'):
-            color = 'skyblue'
+        elif aula.get_curso() == 'Optativas':
+            color = '#00FFFF' # azul claro
         else:
-            color = 'purple'
-        g.add_vertex(name=aula.get_codigo(), aula_obj=aula, color=color )
+            color = '#FF00FF' #fuchsia
 
-    # cria as arestas
-    for i in range(len(g.vs)):
-        for j in range(len(g.vs)):
-            if(i==j):
-                continue
-            aula_i = g.vs[i]["aula_obj"]
-            aula_j = g.vs[j]["aula_obj"]
+        G.add_node(aula, color=color, aula_obj=aula)
 
-            professores_i = set(aula_i.get_professores())
-            professores_j = set(aula_j.get_professores())
+    # Lista de códigos (nomes dos nós)
+    nodes = list(G.nodes)
+    num_restricoes_professores = 0
+    num_restricoes_periodos = 0
+    # Cria as arestas com base nas restrições
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):  # evita duplicação
+            nome_i = nodes[i]
+            nome_j = nodes[j]
+            aula_i = G.nodes[nome_i]["aula_obj"]
+            aula_j = G.nodes[nome_j]["aula_obj"]
 
-            professores_em_comum = professores_i & professores_j
+            profs_i = set(aula_i.get_professores())
+            profs_j = set(aula_j.get_professores())
 
-            for prof in professores_em_comum:
-                # Cria uma aresta para cada professor em comum
-                g.add_edge(i, j, professor=prof, color='red')
-            #cria aresta se curso e periodo em comum
-            if (g.vs[i]["aula_obj"].get_curso() == g.vs[j]["aula_obj"].get_curso()) and (g.vs[i]["aula_obj"].get_periodo() == g.vs[j]["aula_obj"].get_periodo()):
-                g.add_edge(i, j, curso="Curso", color='blue')
-            #arestas para optativas do mesmo periodo das aulas de SIN e CCO
-            if ((g.vs[i]["aula_obj"].get_curso() == 'Optativas' and (g.vs[j]["aula_obj"].get_curso() in ['CCO', 'SIN'])) or (g.vs[j]["aula_obj"].get_curso() == 'Optativas') and (g.vs[i]["aula_obj"].get_curso() in ['CCO', 'SIN'])) and (g.vs[i]["aula_obj"].get_periodo() == g.vs[j]["aula_obj"].get_periodo()):
-                g.add_edge(i, j, curso="Curso", color='blue')
+            profs_em_comum = profs_i & profs_j
 
+            for prof in profs_em_comum:
+                G.add_edge(nome_i, nome_j, professor=prof, color='red')
+                num_restricoes_professores += 1
 
-    # Plota o grafo
-    layout = g.layout_circle()
-    layout.scale(3.0)
+            mesmo_curso_e_periodo = (
+                aula_i.get_curso() == aula_j.get_curso() and
+                aula_i.get_periodo() == aula_j.get_periodo()
+            )
 
-    curved = [0.2] * len(g.es)
-    ig.plot(
-        g,
-        target=save_path,
-        layout=layout,
-        vertex_color=g.vs["color"],
-        vertex_label=g.vs["name"],
-        vertex_size=60,
-        edge_width=3,
-        bbox=(1300, 1300),
-        margin=50,
-        edge_curved= curved,
-    )
+            if mesmo_curso_e_periodo:
+                G.add_edge(nome_i, nome_j, curso="Curso", color='blue')
+                num_restricoes_periodos += 1
+
+            optativa_relacionada = (
+                (aula_i.get_curso() == 'Optativas' and aula_j.get_curso() in ['CCO', 'SIN']) or
+                (aula_j.get_curso() == 'Optativas' and aula_i.get_curso() in ['CCO', 'SIN'])
+            ) and aula_i.get_periodo() == aula_j.get_periodo()
+
+            if optativa_relacionada:
+                G.add_edge(nome_i, nome_j, curso="Curso", color='blue')
+                num_restricoes_periodos += 1
+
+    print(f"A instancia {save_path[-15:]} possui {G.number_of_edges()} restricoes no total.")
+    print(f"{num_restricoes_periodos} restrições relacionadas aos periodos em comum.")
+    print(f"{num_restricoes_professores} restrições relacionadas aos professores em comum.")
+
+    plt.figure(figsize=(7, 7))
+    fig = plt.gcf()
+    fig.set_constrained_layout(True)
+
+    pos = nx.circular_layout(G)
+    node_colors = [G.nodes[n]['color'] for n in G.nodes]
+
+    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=400)
+
+    # labels mostrando o código da aula
+    labels = {n: n.get_codigo() for n in G.nodes}
+
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=5)
+
+    red_edges = [(u, v, k) for u, v, k, d in G.edges(keys=True, data=True) if d.get('color') == 'red']
+    blue_edges = [(u, v, k) for u, v, k, d in G.edges(keys=True, data=True) if d.get('color') == 'blue']
+
+    nx.draw_networkx_edges(G, pos, edgelist=red_edges, edge_color='red', width=1, connectionstyle='arc3,rad=0.2')
+    nx.draw_networkx_edges(G, pos, edgelist=blue_edges, edge_color='blue', width=1, connectionstyle='arc3,rad=0.2')
+
+    plt.axis('off')
+    plt.savefig(save_path, dpi=600)
+    plt.clf()
 
