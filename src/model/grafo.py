@@ -60,9 +60,9 @@ def grafo(aulas_dict: dict, save_path):
                 G.add_edge(nome_i, nome_j, curso="Curso", color='blue')
                 num_restricoes_periodos += 1
 
-    print(f"A instancia {save_path[-15:]} possui {G.number_of_edges()} restricoes no total.")
-    print(f"{num_restricoes_periodos} restrições relacionadas aos periodos em comum.")
-    print(f"{num_restricoes_professores} restrições relacionadas aos professores em comum.")
+    print(f"A instancia referente ao {save_path[-15:-4]} possui um total de {G.number_of_nodes()} variveis e {G.number_of_edges()} conflitos locais.")
+    print(f"{num_restricoes_periodos} conflitos relacionados aos periodos em comum.")
+    print(f"{num_restricoes_professores} conflitos relacionados aos professores em comum.")
 
     plt.figure(figsize=(7, 7))
     fig = plt.gcf()
@@ -76,7 +76,7 @@ def grafo(aulas_dict: dict, save_path):
     # labels mostrando o código da aula
     labels = {n: n.get_codigo() for n in G.nodes}
 
-    nx.draw_networkx_labels(G, pos, labels=labels, font_size=5)
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=4.5, font_weight='bold')
 
     red_edges = [(u, v, k) for u, v, k, d in G.edges(keys=True, data=True) if d.get('color') == 'red']
     blue_edges = [(u, v, k) for u, v, k, d in G.edges(keys=True, data=True) if d.get('color') == 'blue']
