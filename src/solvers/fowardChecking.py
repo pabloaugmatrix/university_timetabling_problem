@@ -235,7 +235,7 @@ def foward_checking(aulas: dict):
             if i == j: # verificação para nao comparar a aula com ela mesma
                 continue
             #se as aulas forem do mesmo curso e periodo, cria uma aresta
-            if ((aulas[i].get_curso() == aulas[j].get_curso()) and (aulas[i].get_periodo() == aulas[j].get_periodo())):
+            if ((aulas[i].get_curso() == aulas[j].get_curso()) and (aulas[i]\.get_periodo() == aulas[j].get_periodo())):
                 lista_adjacentes[i].append(j)
                 continue
             if aulas[i].get_curso() == 'Optativas' or aulas[j].get_curso() == 'Optativas': #esse trecho esta aqui para garantir que que optativas de periodo X tenham conflito com SIN ou CCO no mesmo periodo

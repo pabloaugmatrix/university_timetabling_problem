@@ -21,7 +21,7 @@ if __name__ == "__main__":
     path = f"data/input/{instancia}"
     dataframe = read_data(path)
     aulas = create_aulas_dict(dataframe)
-    grafo(aulas, f"data/output/Grafo {instancia[12:-4]}.png")
+    # grafo(aulas, f"data/output/Grafo {instancia[12:-4]}.png") # deixar comentado quando for realizar o benchmark
     solucao = foward_checking(aulas)
     if solucao != None:
         criar_pdf(f"{instancia[12:-4]}", solucao, aulas)
